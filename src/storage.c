@@ -240,16 +240,134 @@ gchar **connman_storage_get_services(void)
 	return services;
 }
 
-GKeyFile *connman_storage_load_service(const char *service_id)
+GKeyFile *connman_storage_load_service(const char *service_id, const char *ifname /*= ""*/)
 {
-	gchar *pathname;
+	gchar *pathname = NULL;
 	GKeyFile *keyfile = NULL;
 
 	pathname = g_strdup_printf("%s/%s/%s", STORAGEDIR, service_id, SETTINGS);
 	if (!pathname)
 		return NULL;
 
-	keyfile =  storage_load(pathname);
+	keyfile = storage_load(pathname);
+	
+	if (!keyfile) {
+		// Try to load default settings with identifier
+		gchar *default_pathname = g_strdup_printf("%s/defaults/%s", STORAGEDIR, service_id);
+		if (!default_pathname) {
+			g_free(pathname);
+			return NULL;
+		}
+
+		// Check if default file exists
+		if (g_file_test(default_pathname, G_FILE_TEST_EXISTS)) 
+		{
+			gsize length = 0;
+			gchar *content = NULL;	
+
+			// Create settings directory
+			gchar *dirname = g_strdup_printf("%s/%s", STORAGEDIR, service_id);
+			if (!dirname) {
+				g_free(default_pathname);
+				g_free(pathname);
+				return NULL;
+			}
+
+			if (g_mkdir_with_parents(dirname, 0777) < 0) {
+				g_free(dirname);
+				g_free(default_pathname);
+				g_free(pathname);
+				return NULL;
+			}
+
+			// Copy default file to settings folder					
+			if (g_file_get_contents (default_pathname, &content, &length, NULL)) {	
+				if (g_file_set_contents (pathname, content, length, NULL)) {
+					DBG("Deploying default configuration for %s from %s", service_id, default_pathname);
+					DBG("Default content:\n %s", content);
+					keyfile = storage_load(pathname);
+				}
+
+				g_free(content);
+			}
+
+			g_free(dirname);
+		}
+
+		g_free(default_pathname);
+	}
+		
+	if (!keyfile && g_strcmp0(ifname, "") != 0)
+	{	
+		gchar *default_pathname;
+
+		// If we know the interface name and previous failed,
+		// try to find the default config by name			
+
+		// split service_id to get the ident at split[1]
+		gchar **split = g_strsplit(service_id, "_", -1);
+
+		// Replace ident by interface name
+		gchar **split2 = g_strsplit(service_id, split[1], -1);
+		gchar *default_service = g_strjoinv(ifname, split2);
+
+		g_strfreev(split);
+		g_strfreev(split2);
+
+		// Try to load default settings with interface name
+		default_pathname = g_strdup_printf("%s/defaults/%s", STORAGEDIR, default_service);
+		
+		if (!default_pathname) {
+			g_free(pathname);
+			return NULL;
+		}
+
+		// Check if default file exists
+		if (g_file_test(default_pathname, G_FILE_TEST_EXISTS)) {
+			gsize length;
+			gchar *content = NULL;
+			gchar *modified_content = NULL;
+
+			// Create settings directory
+			gchar *dirname = g_strdup_printf("%s/%s", STORAGEDIR, service_id);
+			if (!dirname) {
+				g_free(default_pathname);
+				g_free(pathname);
+				return NULL;
+			}
+
+			if (g_mkdir_with_parents(dirname, 0777) < 0) {
+				g_free(dirname); 
+				g_free(default_pathname);
+				g_free(pathname);
+				return NULL;
+			}
+
+			// Copy default file to settings folder	
+			if (g_file_get_contents (default_pathname, &content, &length, NULL)) {
+				// replace ifname by ident in the default setting 
+				gchar **split3 = g_strsplit(service_id, "_", -1);
+				gchar **split4 = g_strsplit(content, ifname, -1);
+				modified_content = g_strjoinv(split3[1], split4);
+
+				g_strfreev(split3);
+				g_strfreev(split4);
+
+				if (g_file_set_contents (pathname, modified_content, strlen(modified_content), NULL)) {
+					DBG("Deploying default configuration for %s from %s", service_id, default_pathname);
+					DBG("Default content:\n %s", modified_content);
+					keyfile = storage_load(pathname);
+				}
+
+				g_free(modified_content);
+				g_free(content);
+			}
+
+			g_free(dirname);
+			g_free(default_pathname);
+		}
+	}
+
 	g_free(pathname);
 
 	return keyfile;

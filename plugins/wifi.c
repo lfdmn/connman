@@ -1054,7 +1054,7 @@ static int get_hidden_connections(GSupplicantScanParams *scan_data)
 		if (strncmp(services[i], "wifi_", 5) != 0)
 			continue;
 
-		keyfile = connman_storage_load_service(services[i]);
+		keyfile = connman_storage_load_service(services[i], "");
 		if (!keyfile)
 			continue;
 
@@ -1662,7 +1662,7 @@ static int get_latest_connections(int max_ssids,
 		if (strncmp(services[i], "wifi_", 5) != 0)
 			continue;
 
-		keyfile = connman_storage_load_service(services[i]);
+		keyfile = connman_storage_load_service(services[i], "");
 		if (!keyfile)
 			continue;
 

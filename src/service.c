@@ -382,7 +382,7 @@ int __connman_service_load_modifiable(struct connman_service *service)
 
 	DBG("service %p", service);
 
-	keyfile = connman_storage_load_service(service->identifier);
+	keyfile = connman_storage_load_service(service->identifier, connman_service_get_interface(service));
 	if (!keyfile)
 		return -EIO;
 
@@ -435,7 +435,7 @@ static int service_load(struct connman_service *service)
 
 	DBG("service %p", service);
 
-	keyfile = connman_storage_load_service(service->identifier);
+	keyfile = connman_storage_load_service(service->identifier, connman_service_get_interface(service));
 	if (!keyfile) {
 		service->new_service = true;
 		return -EIO;
@@ -6858,7 +6858,7 @@ void __connman_service_read_ip4config(struct connman_service *service)
 	if (!service->ipconfig_ipv4)
 		return;
 
-	keyfile = connman_storage_load_service(service->identifier);
+	keyfile = connman_storage_load_service(service->identifier, connman_service_get_interface(service));
 	if (!keyfile)
 		return;
 
@@ -6888,7 +6888,7 @@ void __connman_service_read_ip6config(struct connman_service *service)
 	if (!service->ipconfig_ipv6)
 		return;
 
-	keyfile = connman_storage_load_service(service->identifier);
+	keyfile = connman_storage_load_service(service->identifier, connman_service_get_interface(service));
 	if (!keyfile)
 		return;
 
@@ -7375,7 +7375,7 @@ static void remove_unprovisioned_services(void)
 		file = section = NULL;
 		keyfile = configkeyfile = NULL;
 
-		keyfile = connman_storage_load_service(services[i]);
+		keyfile = connman_storage_load_service(services[i], "");
 		if (!keyfile)
 			continue;
 

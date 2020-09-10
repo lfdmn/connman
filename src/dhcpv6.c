@@ -198,7 +198,7 @@ static int set_duid(struct connman_service *service,
 
 	ident = connman_service_get_identifier(service);
 
-	keyfile = connman_storage_load_service(ident);
+	keyfile = connman_storage_load_service(ident, connman_service_get_interface(service));
 	if (!keyfile)
 		return -EINVAL;
 

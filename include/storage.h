@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 gchar **connman_storage_get_services();
-GKeyFile *connman_storage_load_service(const char *service_id);
+GKeyFile *connman_storage_load_service(const char *service_id, const char *ifname);
 
 #ifdef __cplusplus
 }
