@@ -605,6 +605,20 @@ static int service_load(struct connman_service *service)
 	service->hidden_service = g_key_file_get_boolean(keyfile,
 					service->identifier, "Hidden", NULL);
 
+    // Set MTU
+    str = g_key_file_get_string(keyfile,
+                                    service->identifier, "MTU", NULL);
+    if (str){
+            int err = 0;
+            int index = -1;
+            char *ifname = connman_service_get_interface(service);
+            index = connman_inet_ifindex(ifname);
+            err = connman_inet_set_mtu(index, atoi(str));
+            DBG("setting MTU %d, error: %d, service: %s, ifname: %s", atoi(str), err, service->identifier, ifname);
+    }
+	
+    g_free(str);
+
 done:
 	g_key_file_free(keyfile);
 
